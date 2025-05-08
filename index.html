@@ -47,9 +47,9 @@
     ];
 
     const regionalZones = {
-      "Győr": ["Győr", "Mosonmagyaróvár", "Komárom"],
-      "Miskolc": ["Miskolc", "Eger", "Kazincbarcika"],
-      "Szeged": ["Szeged", "Makó", "Hódmezővásárhely"]
+      "Győr": ["Győr", "Mosonmagyaróvár", "Komárom", "Csorna"],
+      "Miskolc": ["Miskolc", "Eger", "Kazincbarcika", "Tiszaújváros"],
+      "Szeged": ["Szeged", "Makó", "Hódmezővásárhely", "Kistelek"]
     };
 
     function addRow() {
@@ -82,8 +82,18 @@
               duration: row.elements[0].duration.value
             }));
 
-            // Rangsorolás: ha vidéki zónában van → helyi telephely
             const lowerDest = destination.toLowerCase();
+
+            // 1️⃣ Ha egy vidéki telephely 60 km-en belül van → ő szállít
+            const nearDepot = results.find(r =>
+              r.name !== "Budapest" && r.distance <= 60000
+            );
+            if (nearDepot) {
+              resolve(nearDepot);
+              return;
+            }
+
+            // 2️⃣ Ha a cím szerepel a vidéki régiókban → az szállít
             for (let depotName in regionalZones) {
               if (regionalZones[depotName].some(city => lowerDest.includes(city.toLowerCase()))) {
                 const match = results.find(r => r.name === depotName);
@@ -92,7 +102,7 @@
               }
             }
 
-            // Egyébként mindig Budapest legyen az elsődleges
+            // 3️⃣ Egyébként Budapest szállít
             const budapest = results.find(r => r.name === "Budapest");
             resolve(budapest);
           }
