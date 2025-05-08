@@ -39,6 +39,19 @@
   <div id="result"></div>
 
   <script>
+    const depots = [
+      { name: "Budapest", address: "1173 Budapest, Régivám köz 6." },
+      { name: "Győr", address: "9027 Győr, Csonka János u. 3." },
+      { name: "Miskolc", address: "3527 Miskolc, Várközi Lajos utca 5." },
+      { name: "Szeged", address: "6728 Szeged, Back Bernát u. 2." }
+    ];
+
+    const regionalZones = {
+      "Győr": ["Győr", "Mosonmagyaróvár", "Komárom"],
+      "Miskolc": ["Miskolc", "Eger", "Kazincbarcika"],
+      "Szeged": ["Szeged", "Makó", "Hódmezővásárhely"]
+    };
+
     function addRow() {
       const table = document.querySelector("#ordersTable tbody");
       const row = document.createElement("tr");
@@ -50,9 +63,47 @@
       table.appendChild(row);
     }
 
+    async function getBestDepot(destination) {
+      const service = new google.maps.DistanceMatrixService();
+      return new Promise((resolve) => {
+        service.getDistanceMatrix({
+          origins: depots.map(d => d.address),
+          destinations: [destination],
+          travelMode: 'DRIVING',
+          unitSystem: google.maps.UnitSystem.METRIC
+        }, (response, status) => {
+          if (status !== 'OK') {
+            console.error('Hiba a Google Maps lekérdezésben:', status);
+            resolve({ name: "Ismeretlen", distance: null });
+          } else {
+            const results = response.rows.map((row, i) => ({
+              name: depots[i].name,
+              distance: row.elements[0].distance.value,
+              duration: row.elements[0].duration.value
+            }));
+
+            // Rangsorolás: ha vidéki zónában van → helyi telephely
+            const lowerDest = destination.toLowerCase();
+            for (let depotName in regionalZones) {
+              if (regionalZones[depotName].some(city => lowerDest.includes(city.toLowerCase()))) {
+                const match = results.find(r => r.name === depotName);
+                resolve(match);
+                return;
+              }
+            }
+
+            // Egyébként mindig Budapest legyen az elsődleges
+            const budapest = results.find(r => r.name === "Budapest");
+            resolve(budapest);
+          }
+        });
+      });
+    }
+
     async function optimize() {
       const rows = document.querySelectorAll("#ordersTable tbody tr");
-      const results = [];
+      const resultList = document.getElementById("result");
+      resultList.innerHTML = "<h3>Eredmények:</h3><ul>";
 
       for (const row of rows) {
         const cells = row.querySelectorAll("input");
@@ -60,12 +111,11 @@
         const raklap = parseFloat(cells[1].value);
         const kg = parseFloat(cells[2].value);
 
-        results.push(`🔍 ${address} – ${raklap} raklap, ${kg} kg`);
-        // Itt jön majd a távolság lekérés és a döntés!
+        const depotInfo = await getBestDepot(address);
+        resultList.innerHTML += `<li>📍 ${address} – ${raklap} raklap, ${kg} kg → 🚚 <strong>${depotInfo.name}</strong> (${Math.round(depotInfo.distance / 1000)} km)</li>`;
       }
 
-      document.getElementById("result").innerHTML = "<h3>Eredmény (még csak lista):</h3><ul>" +
-        results.map(r => `<li>${r}</li>`).join("") + "</ul>";
+      resultList.innerHTML += "</ul>";
     }
   </script>
 </body>
