@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <title>Kiszállítás Optimalizáló</title>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC5E59duGPNKibjfN7snj7yCQDfa4iDPRQ&libraries=places"></script>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: auto; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; }
+    input { width: 100%; }
+    button { margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+  <h1>Kiszállítás optimalizálás</h1>
+
+  <table id="ordersTable">
+    <thead>
+      <tr>
+        <th>Cím</th>
+        <th>Raklap</th>
+        <th>Súly (kg)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><input type="text" value="Klingler Klaus 21, Tarnazsadány"></td>
+        <td><input type="number" value="1"></td>
+        <td><input type="number" value="200"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <button onclick="addRow()">➕ Új cím hozzáadása</button>
+  <button onclick="optimize()">🧠 Optimalizálás indítása</button>
+
+  <div id="result"></div>
+
+  <script>
+    function addRow() {
+      const table = document.querySelector("#ordersTable tbody");
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td><input type="text"></td>
+        <td><input type="number" value="1"></td>
+        <td><input type="number" value="0"></td>
+      `;
+      table.appendChild(row);
+    }
+
+    async function optimize() {
+      const rows = document.querySelectorAll("#ordersTable tbody tr");
+      const results = [];
+
+      for (const row of rows) {
+        const cells = row.querySelectorAll("input");
+        const address = cells[0].value;
+        const raklap = parseFloat(cells[1].value);
+        const kg = parseFloat(cells[2].value);
+
+        results.push(`🔍 ${address} – ${raklap} raklap, ${kg} kg`);
+        // Itt jön majd a távolság lekérés és a döntés!
+      }
+
+      document.getElementById("result").innerHTML = "<h3>Eredmény (még csak lista):</h3><ul>" +
+        results.map(r => `<li>${r}</li>`).join("") + "</ul>";
+    }
+  </script>
+</body>
+</html>
